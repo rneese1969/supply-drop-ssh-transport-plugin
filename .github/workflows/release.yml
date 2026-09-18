@@ -28,6 +28,10 @@ jobs:
             asset: linux-arm64
             deb_arch: arm64
             exe_suffix: ""
+          - os: ubuntu-24.04-arm
+            asset: linux-armhf
+            deb_arch: armhf
+            exe_suffix: ""            
           - os: windows-latest
             asset: windows-x86_64
             deb_arch: ""
@@ -99,7 +103,7 @@ jobs:
               "Depends: supply-drop-bbs (>= 0.6.0), awk, openssh-client",
               "Installed-Size: $installedSize",
               "Maintainer: Mesh America <support@meshamerica.com>",
-              "Homepage: https://mesh-america.github.io/supply-drop-ssh-transport-plugin/",
+              "Homepage: https://rneese1969.github.io/supply-drop-ssh-transport-plugin/",
               "Description: SSH process transport plugin for Supply Drop BBS",
               " Adds an SSH listener that connects standard SSH clients to",
               " Supply Drop BBS through the process transport plugin protocol.",
