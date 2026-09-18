@@ -1,0 +1,118 @@
+#!/bin/sh
+set -e
+
+BBS_BIN="${BBS_BIN:-supply-drop-bbs}"
+PLUGIN_BIN="/usr/bin/supply-drop-ssh"
+LEGACY_PLUGIN_BIN="/usr/local/bin/supply-drop-ssh"
+PLUGIN_DROPIN="${PLUGIN_DROPIN:-/etc/supply-drop-bbs/plugins.d/ssh.toml}"
+STATE_DIR="${STATE_DIR:-/var/lib/supply-drop-ssh}"
+HOST_KEY="${HOST_KEY:-$STATE_DIR/host_key}"
+MIN_BBS_VERSION="0.6.0"
+
+version_ge() {
+  current="$1"
+  minimum="$2"
+
+  old_ifs="$IFS"
+  IFS=.
+  set -- $current
+  current_major="${1:-0}"
+  current_minor="${2:-0}"
+  current_patch="${3:-0}"
+  set -- $minimum
+  minimum_major="${1:-0}"
+  minimum_minor="${2:-0}"
+  minimum_patch="${3:-0}"
+  IFS="$old_ifs"
+
+  [ "$current_major" -gt "$minimum_major" ] && return 0
+  [ "$current_major" -lt "$minimum_major" ] && return 1
+  [ "$current_minor" -gt "$minimum_minor" ] && return 0
+  [ "$current_minor" -lt "$minimum_minor" ] && return 1
+  [ "$current_patch" -ge "$minimum_patch" ]
+}
+
+detect_bbs_version() {
+  "$BBS_BIN" --version 2>/dev/null |
+    awk 'match($0, /[0-9]+\.[0-9]+\.[0-9]+/) { print substr($0, RSTART, RLENGTH); exit }'
+}
+
+migrate_legacy_dropin() {
+  if [ ! -f "$PLUGIN_DROPIN" ] || ! grep -Fq "$LEGACY_PLUGIN_BIN" "$PLUGIN_DROPIN"; then
+    return
+  fi
+
+  tmp="${PLUGIN_DROPIN}.tmp.$$"
+  sed "s#${LEGACY_PLUGIN_BIN}#${PLUGIN_BIN}#g" "$PLUGIN_DROPIN" >"$tmp"
+  cat "$tmp" >"$PLUGIN_DROPIN"
+  rm -f "$tmp"
+  echo "Migrated SSH plugin command from $LEGACY_PLUGIN_BIN to $PLUGIN_BIN."
+}
+
+# The SSH host key must survive upgrades, otherwise every client sees a host
+# key mismatch warning after each install.
+prepare_state_dir() {
+  if [ ! -d "$STATE_DIR" ]; then
+    mkdir -p "$STATE_DIR"
+  fi
+  chmod 700 "$STATE_DIR"
+}
+
+# Generate the host key at install time so the first connection is not delayed
+# and so the key is owned by root rather than the BBS runtime user.
+generate_host_key() {
+  if [ -f "$HOST_KEY" ]; then
+    echo "Reusing existing SSH host key at $HOST_KEY."
+    return
+  fi
+
+  if command -v ssh-keygen >/dev/null 2>&1; then
+    ssh-keygen -t ed25519 -N "" -C "supply-drop-ssh" -f "$HOST_KEY" >/dev/null 2>&1 || true
+  fi
+
+  if [ -f "$HOST_KEY" ]; then
+    chmod 600 "$HOST_KEY"
+    echo "Generated SSH host key at $HOST_KEY."
+  else
+    echo "Could not pre-generate a host key; the plugin will create one on first start." >&2
+  fi
+}
+
+print_fingerprint() {
+  if [ -f "${HOST_KEY}.pub" ] && command -v ssh-keygen >/dev/null 2>&1; then
+    echo "SSH host key fingerprint:"
+    ssh-keygen -lf "${HOST_KEY}.pub" 2>/dev/null || true
+  fi
+}
+
+if [ "$1" = "configure" ]; then
+  migrate_legacy_dropin
+  prepare_state_dir
+  generate_host_key
+
+  if command -v "$BBS_BIN" >/dev/null 2>&1; then
+    bbs_version="$(detect_bbs_version)"
+    if [ -n "$bbs_version" ] && version_ge "$bbs_version" "$MIN_BBS_VERSION"; then
+      "$BBS_BIN" plugin add ssh "$PLUGIN_BIN"
+    else
+      echo "Supply Drop BBS v${MIN_BBS_VERSION}+ is required to register the SSH plugin." >&2
+      echo "Install or upgrade Supply Drop BBS, then run:" >&2
+      echo "  sudo $BBS_BIN plugin add ssh $PLUGIN_BIN" >&2
+    fi
+  else
+    echo "Supply Drop BBS was not found; install it, then run:" >&2
+    echo "  sudo $BBS_BIN plugin add ssh $PLUGIN_BIN" >&2
+  fi
+
+  print_fingerprint
+
+  if command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet supply-drop-bbs.service 2>/dev/null; then
+    systemctl restart supply-drop-bbs.service ||
+      echo "Warning: could not restart supply-drop-bbs.service; restart it manually to activate SSH." >&2
+  else
+    echo "Restart Supply Drop BBS to activate SSH:" >&2
+    echo "  sudo systemctl restart supply-drop-bbs" >&2
+  fi
+fi
+
+exit 0

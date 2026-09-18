@@ -1,0 +1,145 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+env:
+  CARGO_TERM_COLOR: always
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.asset }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset: linux-x86_64
+            deb_arch: amd64
+            exe_suffix: ""
+          - os: ubuntu-24.04-arm
+            asset: linux-arm64
+            deb_arch: arm64
+            exe_suffix: ""
+          - os: windows-latest
+            asset: windows-x86_64
+            deb_arch: ""
+            exe_suffix: ".exe"
+          - os: macos-latest
+            asset: macos-arm64
+            deb_arch: ""
+            exe_suffix: ""
+          - os: macos-15-intel
+            asset: macos-x86_64
+            deb_arch: ""
+            exe_suffix: ""
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Package binary
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $binary = "supply-drop-ssh${{ matrix.exe_suffix }}"
+          $packageName = "supply-drop-ssh-transport-plugin-${{ github.ref_name }}-${{ matrix.asset }}"
+          $packageDir = Join-Path "dist" $packageName
+          New-Item -ItemType Directory -Force -Path $packageDir | Out-Null
+          Copy-Item "target/release/$binary" (Join-Path $packageDir $binary)
+          Copy-Item "README.md" $packageDir
+          Copy-Item "CHANGELOG.md" $packageDir
+          Copy-Item "LICENSE" $packageDir
+          Copy-Item "scripts/install.sh" $packageDir
+          Copy-Item "scripts/install.ps1" $packageDir
+          Compress-Archive -Path "$packageDir/*" -DestinationPath "dist/supply-drop-ssh-transport-plugin-${{ matrix.asset }}.zip" -Force
+
+          $debArch = "${{ matrix.deb_arch }}"
+          if ($debArch) {
+            $version = "${{ github.ref_name }}".TrimStart("v")
+            $debRoot = Join-Path "dist" "deb-${{ matrix.asset }}"
+            $debControl = Join-Path $debRoot "DEBIAN"
+            $debBin = Join-Path $debRoot "usr/bin"
+            $debDoc = Join-Path $debRoot "usr/share/doc/supply-drop-ssh-transport-plugin"
+
+            New-Item -ItemType Directory -Force -Path $debControl, $debBin, $debDoc | Out-Null
+            Copy-Item "target/release/$binary" (Join-Path $debBin "supply-drop-ssh")
+            Copy-Item "README.md" $debDoc
+            Copy-Item "CHANGELOG.md" $debDoc
+            Copy-Item "LICENSE" $debDoc
+            Copy-Item "packaging/debian/postinst" $debControl
+            Copy-Item "packaging/debian/postrm" $debControl
+
+            chmod 755 (Join-Path $debBin "supply-drop-ssh")
+            chmod 755 (Join-Path $debControl "postinst")
+            chmod 755 (Join-Path $debControl "postrm")
+
+            $installedSize = [Math]::Ceiling(((Get-ChildItem $debRoot -Recurse -File | Measure-Object -Property Length -Sum).Sum) / 1KB)
+            $control = (@(
+              "Package: supply-drop-ssh-transport-plugin",
+              "Version: $version",
+              "Section: net",
+              "Priority: optional",
+              "Architecture: $debArch",
+              "Depends: supply-drop-bbs (>= 0.6.0), awk, openssh-client",
+              "Installed-Size: $installedSize",
+              "Maintainer: Mesh America <support@meshamerica.com>",
+              "Homepage: https://mesh-america.github.io/supply-drop-ssh-transport-plugin/",
+              "Description: SSH process transport plugin for Supply Drop BBS",
+              " Adds an SSH listener that connects standard SSH clients to",
+              " Supply Drop BBS through the process transport plugin protocol.",
+              " Sessions are encrypted end to end and the BBS keeps running its",
+              " own login flow over the terminal."
+            ) -join "`n") + "`n"
+            Set-Content -NoNewline -Encoding ASCII -Path (Join-Path $debControl "control") -Value $control
+
+            dpkg-deb --build --root-owner-group $debRoot "dist/supply-drop-ssh-transport-plugin_${debArch}.deb"
+          }
+
+      - name: Upload package
+        uses: actions/upload-artifact@v5
+        with:
+          name: supply-drop-ssh-transport-plugin-${{ matrix.asset }}
+          path: |
+            dist/supply-drop-ssh-transport-plugin-${{ matrix.asset }}.zip
+            dist/supply-drop-ssh-transport-plugin_*.deb
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Download packages
+        uses: actions/download-artifact@v5
+        with:
+          path: artifacts
+
+      - name: Create release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          files=$(find artifacts \( -name '*.zip' -o -name '*.deb' \) -type f | sort)
+          gh release create "$TAG" \
+            $files \
+            --title "Supply Drop SSH Transport Plugin $TAG" \
+            --generate-notes

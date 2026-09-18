@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Supply Drop SSH Transport Plugin</title>
+    <meta
+      name="description"
+      content="An SSH process transport plugin for Supply Drop BBS with prebuilt binaries, installers, and a sysop quickstart."
+    >
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Supply Drop SSH Transport Plugin home">
+        <img class="brand-mark" src="assets/supply-drop-icon-transparent.svg" alt="Supply Drop BBS logo">
+        <span>SSH Transport</span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="#quickstart">Quickstart</a>
+        <a href="#install">Install</a>
+        <a href="#configure">Configure</a>
+        <a href="#release">Downloads</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Supply Drop BBS process transport</p>
+          <h1>Encrypted SSH access for Supply Drop BBS.</h1>
+          <p class="lede">
+            A standalone process transport plugin that lets any standard SSH
+            client connect to your Supply Drop instance over an encrypted
+            session. Install the package on the BBS host, let it register
+            itself with Supply Drop, then connect on port 2222.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#quickstart">Start quickstart</a>
+            <a class="button" href="#release">Downloads</a>
+          </div>
+        </div>
+
+        <div class="hero-visual" aria-label="SSH plugin preview">
+          <div class="terminal hero-terminal" aria-label="Terminal preview">
+            <div class="terminal-bar">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <pre><code>$ ssh -p 2222 bbs.example.net
+Connected to Supply Drop BBS.
+
+Welcome, ssh-bob.
+Type 'H' for commands.
+
+> N</code></pre>
+          </div>
+          <div class="hero-badge">
+            <img src="assets/ssh-bob-bbs.png" alt="Supply Drop BBS SSH Plugin badge">
+          </div>
+        </div>
+      </section>
+
+      <section class="feature-strip" aria-label="Plugin highlights">
+        <div>
+          <strong>No config.toml edits</strong>
+          <span>The package registers SSH through Supply Drop's plugins.d directory.</span>
+        </div>
+        <div>
+          <strong>Port 2222 ready</strong>
+          <span>Works with OpenSSH, PuTTY, and any standard SSH client.</span>
+        </div>
+        <div>
+          <strong>Admin version</strong>
+          <span>Reports its plugin version to Supply Drop BBS v0.6.1 and newer.</span>
+        </div>
+      </section>
+
+      <section id="quickstart" class="section split">
+        <div>
+          <p class="eyebrow">Quickstart</p>
+          <h2>Get a sysop online in a few minutes.</h2>
+          <p>
+            This is the shortest path from an existing Supply Drop instance to
+            a working SSH listener on port 2222.
+          </p>
+          <a class="text-link" href="https://github.com/Mesh-America/supply-drop-ssh-transport-plugin/blob/main/QUICKSTART.md">Read the full quickstart</a>
+        </div>
+        <ol class="steps">
+          <li><span>Install the package on the computer that runs Supply Drop.</span></li>
+          <li><span>Confirm SSH appears in <code>supply-drop-bbs plugin list</code>.</span></li>
+          <li><span>Check that port <code>2222</code> is listening.</span></li>
+          <li><span>Connect with PuTTY or <code>ssh -p 2222 &lt;bbs-host&gt;</code>.</span></li>
+        </ol>
+      </section>
+
+      <section id="install" class="section install-section">
+        <div class="install-layout">
+          <div class="install-intro">
+            <p class="eyebrow">Install</p>
+            <h2>Install the Debian package on Linux.</h2>
+            <p>
+              Choose the <code>.deb</code> that matches the computer running
+              Supply Drop. Raspberry Pi hosts usually use ARM64. Intel and AMD
+              Linux hosts use AMD64. The package installs the plugin, registers
+              it with Supply Drop, and restarts the BBS if it is already running.
+            </p>
+          </div>
+
+          <div class="install-primary">
+            <div class="deb-choices">
+              <div class="command-block">
+                <div class="code-title">Raspberry Pi / ARM64 .deb</div>
+                <pre><code>curl -fsSL -o supply-drop-ssh.deb \
+  https://github.com/Mesh-America/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_arm64.deb
+sudo dpkg -i supply-drop-ssh.deb</code></pre>
+              </div>
+              <div class="command-block">
+                <div class="code-title">Intel / AMD64 .deb</div>
+                <pre><code>curl -fsSL -o supply-drop-ssh.deb \
+  https://github.com/Mesh-America/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_amd64.deb
+sudo dpkg -i supply-drop-ssh.deb</code></pre>
+              </div>
+            </div>
+            <ul class="result-list">
+              <li>Requires Supply Drop BBS v0.6.0 or newer.</li>
+              <li>Installs <code>/usr/bin/supply-drop-ssh</code>.</li>
+              <li>Creates <code>/etc/supply-drop-bbs/plugins.d/ssh.toml</code>.</li>
+              <li>Does not edit <code>config.toml</code>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="install-options" aria-label="Other install options">
+          <div class="install-option">
+            <strong>macOS</strong>
+            <p>Installs the matching Apple Silicon or Intel ZIP binary.</p>
+            <pre><code>curl -fsSL \
+  https://raw.githubusercontent.com/Mesh-America/supply-drop-ssh-transport-plugin/main/scripts/install.sh | sh</code></pre>
+          </div>
+          <div class="install-option">
+            <strong>Windows PowerShell</strong>
+            <p>Installs the Windows binary. Run as Administrator for Program Files.</p>
+            <pre><code>iwr https://raw.githubusercontent.com/Mesh-America/supply-drop-ssh-transport-plugin/main/scripts/install.ps1 `
+  -UseBasicParsing | iex</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="configure" class="section split reverse">
+        <div>
+          <p class="eyebrow">Supply Drop v0.6.0+</p>
+          <h2>Registration goes through plugins.d.</h2>
+          <p>
+            The Debian package calls Supply Drop's plugin CLI, which creates
+            <code>/etc/supply-drop-bbs/plugins.d/ssh.toml</code>. It never
+            edits <code>config.toml</code>. On startup, the plugin also reports
+            its version in the <code>ready</code> frame so the admin Plugins
+            table can display it.
+          </p>
+        </div>
+        <div class="code-panel">
+          <div class="code-title">Supply Drop CLI</div>
+          <pre><code>supply-drop-bbs plugin add ssh /usr/bin/supply-drop-ssh</code></pre>
+        </div>
+      </section>
+
+      <section class="section split">
+        <div>
+          <p class="eyebrow">Upgrade-safe</p>
+          <h2>The drop-in config survives BBS upgrades.</h2>
+          <p>
+            The plugin add command is safe to run on every upgrade. If SSH
+            is already registered, Supply Drop prints that no changes were
+            made and exits successfully.
+          </p>
+        </div>
+        <div class="code-panel compact-code">
+          <div class="code-title">Created by Supply Drop</div>
+          <pre><code>/etc/supply-drop-bbs/plugins.d/ssh.toml
+
+already configured — no changes made</code></pre>
+        </div>
+      </section>
+
+      <section class="section split">
+        <div>
+          <p class="eyebrow">Operator note</p>
+          <h2>Encrypted, but still gate the port.</h2>
+          <p>
+            Sessions are encrypted, so the plaintext exposure of Telnet is gone.
+            The plugin accepts any SSH username, password, or key by design
+            because Supply Drop runs the real login, so anyone who reaches port
+            <code>2222</code> reaches the BBS login prompt. The Linux package
+            uses the plugin default, <code>0.0.0.0:2222</code>; use the drop-in
+            file for a local-only bind.
+          </p>
+        </div>
+        <div class="mode-table" role="table" aria-label="Bind mode examples">
+          <div role="row">
+            <strong role="cell">Local only</strong>
+            <code role="cell">--bind 127.0.0.1:2222</code>
+          </div>
+          <div role="row">
+            <strong role="cell">LAN/public</strong>
+            <code role="cell">--bind 0.0.0.0:2222</code>
+          </div>
+        </div>
+      </section>
+
+      <section class="section split reverse">
+        <div>
+          <p class="eyebrow">Host key</p>
+          <h2>Publish your fingerprint once.</h2>
+          <p>
+            The plugin generates a persistent Ed25519 host key on first install
+            and reuses it after that, so returning users are not warned about a
+            changed key. Share the fingerprint so people can verify the BBS the
+            first time they connect. In PuTTY, leave the SSH radio button
+            selected and set the port to <code>2222</code>.
+          </p>
+        </div>
+        <div class="code-panel compact-code">
+          <div class="code-title">Show the fingerprint</div>
+          <pre><code>ssh-keygen -lf /var/lib/supply-drop-ssh/host_key.pub</code></pre>
+        </div>
+      </section>
+
+      <section class="section split">
+        <div>
+          <p class="eyebrow">Troubleshooting</p>
+          <h2>Connection refused means no listener answered.</h2>
+          <p>
+            If the Pi rejects port 2222, check the listener on the Pi first.
+            No listener means Supply Drop did not start the plugin, or the
+            plugin exited during startup.
+          </p>
+        </div>
+        <div class="code-panel compact-code">
+          <div class="code-title">Raspberry Pi</div>
+          <pre><code>sudo ss -ltnp | grep ':2222'
+sudo supply-drop-bbs plugin list
+sudo journalctl -u supply-drop-bbs -n 100 --no-pager</code></pre>
+        </div>
+      </section>
+
+      <section id="release" class="section release">
+        <div class="release-heading">
+          <p class="eyebrow">Downloads</p>
+          <h2>Packages are for the computer running Supply Drop.</h2>
+          <p>
+            Most Linux sysops should use the Debian package commands above.
+            These direct downloads are for offline installs, manual inspection,
+            or hosts where you already know the operating system and CPU type.
+          </p>
+        </div>
+        <div class="release-grid">
+          <a href="https://github.com/Mesh-America/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_arm64.deb">
+            <strong>Debian ARM64</strong>
+            <span>Raspberry Pi 4/5, ARM servers</span>
+            <em>Download DEB</em>
+          </a>
+          <a href="https://github.com/Mesh-America/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_amd64.deb">
+            <strong>Debian AMD64</strong>
+            <span>Intel/AMD Linux servers</span>
+            <em>Download DEB</em>
+          </a>
+          <a href="https://github.com/Mesh-America/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin-windows-x86_64.zip">
+            <strong>Windows x86_64</strong>
+            <span>Windows host or test box</span>
+            <em>Download ZIP</em>
+          </a>
+          <a href="https://github.com/Mesh-America/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin-macos-arm64.zip">
+            <strong>macOS Apple Silicon</strong>
+            <span>M1/M2/M3/M4 Macs</span>
+            <em>Download ZIP</em>
+          </a>
+          <a href="https://github.com/Mesh-America/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin-macos-x86_64.zip">
+            <strong>macOS Intel</strong>
+            <span>Older Intel Macs</span>
+            <em>Download ZIP</em>
+          </a>
+        </div>
+        <a class="release-all" href="https://github.com/Mesh-America/supply-drop-ssh-transport-plugin/releases/latest">View checksums, notes, and all release files on GitHub</a>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Apache-2.0</span>
+      <a href="https://github.com/Mesh-America/supply-drop-ssh-transport-plugin">GitHub</a>
+      <a href="https://supplydrop.meshamerica.com/">Supply Drop docs</a>
+    </footer>
+
+    <script>
+      (() => {
+        const copyText = async (text) => {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            return;
+          }
+
+          const textarea = document.createElement("textarea");
+          textarea.value = text;
+          textarea.setAttribute("readonly", "");
+          textarea.style.position = "fixed";
+          textarea.style.top = "-9999px";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          textarea.remove();
+        };
+
+        document
+          .querySelectorAll(".command-block, .code-panel, .install-option")
+          .forEach((panel) => {
+            const code = panel.querySelector("pre code");
+            if (!code) {
+              return;
+            }
+
+            const button = document.createElement("button");
+            const title = panel.querySelector(".code-title");
+            const label = title ? title.textContent.trim() : "command";
+
+            button.type = "button";
+            button.className = "copy-button";
+            button.textContent = "Copy";
+            button.setAttribute("aria-label", `Copy ${label}`);
+
+            if (title) {
+              title.appendChild(button);
+            } else {
+              const row = document.createElement("div");
+              row.className = "copy-row";
+              row.appendChild(button);
+              panel.insertBefore(row, panel.querySelector("pre"));
+            }
+
+            button.addEventListener("click", async () => {
+              const original = button.textContent;
+
+              try {
+                await copyText(code.textContent.trimEnd());
+                button.textContent = "Copied";
+                button.classList.add("copied");
+              } catch {
+                button.textContent = "Copy failed";
+              }
+
+              window.setTimeout(() => {
+                button.textContent = original;
+                button.classList.remove("copied");
+              }, 1600);
+            });
+          });
+      })();
+    </script>
+  </body>
+</html>

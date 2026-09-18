@@ -1,0 +1,25 @@
+#!/bin/sh
+set -e
+
+BBS_BIN="${BBS_BIN:-supply-drop-bbs}"
+STATE_DIR="${STATE_DIR:-/var/lib/supply-drop-ssh}"
+
+if [ "$1" = "remove" ]; then
+  if command -v "$BBS_BIN" >/dev/null 2>&1; then
+    "$BBS_BIN" plugin remove ssh || true
+  fi
+
+  if command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet supply-drop-bbs.service 2>/dev/null; then
+    systemctl restart supply-drop-bbs.service ||
+      echo "Warning: could not restart supply-drop-bbs.service after removing SSH." >&2
+  fi
+fi
+
+# The host key is deliberately preserved on `remove` so that reinstalling does
+# not trigger host key mismatch warnings for existing users. `purge` is the
+# explicit request to erase all state.
+if [ "$1" = "purge" ]; then
+  rm -rf "$STATE_DIR"
+fi
+
+exit 0
