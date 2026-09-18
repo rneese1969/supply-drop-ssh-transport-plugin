@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-REPO="${REPO:-Mesh-America/supply-drop-ssh-transport-plugin}"
+REPO="${REPO:-rneese1969/supply-drop-ssh-transport-plugin}"
 VERSION="${VERSION:-latest}"
 INSTALL_DIR="${INSTALL_DIR:-/usr/local/bin}"
 BIN_NAME="${BIN_NAME:-supply-drop-ssh}"
@@ -32,6 +32,7 @@ detect_asset() {
       case "$arch" in
         x86_64 | amd64) printf 'linux-x86_64' ;;
         aarch64 | arm64) printf 'linux-arm64' ;;
+		armv71 | armhf) printf 'linux-armhf' ;;
         *) fail "unsupported Linux architecture: $arch" ;;
       esac
       ;;
@@ -53,6 +54,7 @@ detect_deb_arch() {
   case "$(dpkg --print-architecture)" in
     amd64) printf 'amd64' ;;
     arm64) printf 'arm64' ;;
+	armhf) printf 'armhf' ;;
     *) return 1 ;;
   esac
 }
