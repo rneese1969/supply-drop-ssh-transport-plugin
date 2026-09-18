@@ -4,7 +4,7 @@ Standalone SSH process transport plugin for [Supply Drop BBS](https://supplydrop
 
 Supply Drop is mesh-first but transport-agnostic. This plugin lets ordinary SSH clients connect to the BBS by translating SSH sessions into the Supply Drop process transport protocol over stdin/stdout.
 
-Project site: <https://mesh-america.github.io/supply-drop-ssh-transport-plugin/>
+Project site: <https://rneese1969.github.io/supply-drop-ssh-transport-plugin/>
 
 ## Quickstart
 
