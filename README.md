@@ -18,7 +18,7 @@ Raspberry Pi / ARM64:
 
 ```sh
 curl -fsSL -o supply-drop-ssh.deb \
-  https://github.com/Mesh-America/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_arm64.deb
+  https://github.com/rneese1969/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_arm64.deb
 sudo dpkg -i supply-drop-ssh.deb
 ```
 
@@ -26,7 +26,7 @@ Intel / AMD64:
 
 ```sh
 curl -fsSL -o supply-drop-ssh.deb \
-  https://github.com/Mesh-America/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_amd64.deb
+  https://github.com/rneese1969/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_amd64.deb
 sudo dpkg -i supply-drop-ssh.deb
 ```
 
@@ -182,7 +182,7 @@ Raspberry Pi / ARM64:
 
 ```sh
 curl -fsSL -o supply-drop-ssh.deb \
-  https://github.com/Mesh-America/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_arm64.deb
+  https://github.com/rneese1969/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_arm64.deb
 sudo dpkg -i supply-drop-ssh.deb
 ```
 
@@ -190,7 +190,7 @@ Intel / AMD64:
 
 ```sh
 curl -fsSL -o supply-drop-ssh.deb \
-  https://github.com/Mesh-America/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_amd64.deb
+  https://github.com/rneese1969/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_amd64.deb
 sudo dpkg -i supply-drop-ssh.deb
 ```
 
@@ -260,7 +260,7 @@ Raspberry Pi / ARM64:
 
 ```sh
 curl -L -o supply-drop-ssh.deb \
-  https://github.com/Mesh-America/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_arm64.deb
+  https://github.com/rneese1969/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_arm64.deb
 sudo dpkg -i supply-drop-ssh.deb
 ```
 
@@ -268,7 +268,7 @@ Intel / AMD64:
 
 ```sh
 curl -L -o supply-drop-ssh.deb \
-  https://github.com/Mesh-America/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_amd64.deb
+  https://github.com/rneese1969/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_amd64.deb
 sudo dpkg -i supply-drop-ssh.deb
 ```
 
@@ -286,7 +286,7 @@ macOS:
 
 ```sh
 curl -L -o supply-drop-ssh.zip \
-  https://github.com/Mesh-America/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin-macos-arm64.zip
+  https://github.com/rneese1969/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin-macos-arm64.zip
 unzip -o supply-drop-ssh.zip -d supply-drop-ssh
 sudo install -m 755 supply-drop-ssh/*/supply-drop-ssh /usr/local/bin/supply-drop-ssh
 ```
@@ -295,7 +295,7 @@ macOS Intel:
 
 ```sh
 curl -L -o supply-drop-ssh.zip \
-  https://github.com/Mesh-America/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin-macos-x86_64.zip
+  https://github.com/rneese1969/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin-macos-x86_64.zip
 unzip -o supply-drop-ssh.zip -d supply-drop-ssh
 sudo install -m 755 supply-drop-ssh/*/supply-drop-ssh /usr/local/bin/supply-drop-ssh
 ```

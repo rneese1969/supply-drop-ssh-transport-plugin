@@ -12,7 +12,7 @@ Raspberry Pi / ARM64:
 
 ```sh
 curl -fsSL -o supply-drop-ssh.deb \
-  https://github.com/Mesh-America/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_arm64.deb
+  https://github.com/rneese1969/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_arm64.deb
 sudo dpkg -i supply-drop-ssh.deb
 ```
 
@@ -20,7 +20,7 @@ Intel / AMD64:
 
 ```sh
 curl -fsSL -o supply-drop-ssh.deb \
-  https://github.com/Mesh-America/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_amd64.deb
+  https://github.com/rneese1969/supply-drop-ssh-transport-plugin/releases/latest/download/supply-drop-ssh-transport-plugin_amd64.deb
 sudo dpkg -i supply-drop-ssh.deb
 ```
 
