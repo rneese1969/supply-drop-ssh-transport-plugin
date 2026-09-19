@@ -1,3 +1,4 @@
+
 name: Release
 
 on:
@@ -16,32 +17,52 @@ jobs:
   build:
     name: Build ${{ matrix.asset }}
     runs-on: ${{ matrix.os }}
+
     strategy:
       fail-fast: false
       matrix:
         include:
+          # Linux x86_64
           - os: ubuntu-latest
             asset: linux-x86_64
+            target: x86_64-unknown-linux-gnu
             deb_arch: amd64
             exe_suffix: ""
+
+          # Linux ARM64
           - os: ubuntu-24.04-arm
             asset: linux-arm64
+            target: aarch64-unknown-linux-gnu
             deb_arch: arm64
             exe_suffix: ""
-          - os: ubuntu-24.04-arm
-            asset: linux-armhf
+
+          # Linux ARMv7 hard-float / ARMHF
+          #
+          # This is a 32-bit ARM binary and is cross-compiled.
+          - os: ubuntu-latest
+            asset: linux-armv7l
+            target: armv7-unknown-linux-gnueabihf
             deb_arch: armhf
-            exe_suffix: ""            
+            exe_suffix: ""
+
+          # Windows x86_64
           - os: windows-latest
             asset: windows-x86_64
+            target: x86_64-pc-windows-msvc
             deb_arch: ""
             exe_suffix: ".exe"
+
+          # macOS ARM64
           - os: macos-latest
             asset: macos-arm64
+            target: aarch64-apple-darwin
             deb_arch: ""
             exe_suffix: ""
+
+          # macOS x86_64
           - os: macos-15-intel
             asset: macos-x86_64
+            target: x86_64-apple-darwin
             deb_arch: ""
             exe_suffix: ""
 
@@ -53,74 +74,159 @@ jobs:
         run: |
           rustup toolchain install stable --profile minimal
           rustup default stable
+          rustup target add ${{ matrix.target }}
 
-      - name: Build release binary
-        run: cargo build --release
+      # Install the GNU ARMHF cross-compiler and linker.
+      - name: Install ARMHF cross-compiler
+        if: matrix.target == 'armv7-unknown-linux-gnueabihf'
+        shell: bash
+        run: |
+          sudo dpkg --add-architecture armhf
+          sudo apt-get update
+          sudo apt-get install -y \
+            gcc-arm-linux-gnueabihf \
+            libc6-dev-armhf-cross
 
-      - name: Package binary
+      # Native and cross-platform Unix builds.
+      - name: Build Unix release binary
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          set -eux
+
+          if [ "$TARGET" = "armv7-unknown-linux-gnueabihf" ]; then
+            export CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER=arm-linux-gnueabihf-gcc
+          fi
+
+          cargo build --release --target "$TARGET"
+
+      # Windows build.
+      - name: Build Windows release binary
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
-          $binary = "supply-drop-ssh${{ matrix.exe_suffix }}"
-          $packageName = "supply-drop-ssh-transport-plugin-${{ github.ref_name }}-${{ matrix.asset }}"
+          cargo build --release --target "${{ matrix.target }}"
+
+      - name: Package Unix binary
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+          ASSET: ${{ matrix.asset }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -eux
+
+          BINARY="supply-drop-ssh"
+          PACKAGE_NAME="supply-drop-ssh-transport-plugin-${VERSION}-${ASSET}"
+          PACKAGE_DIR="dist/${PACKAGE_NAME}"
+          BINARY_PATH="target/${TARGET}/release/${BINARY}"
+
+          mkdir -p "$PACKAGE_DIR"
+
+          test -f "$BINARY_PATH"
+
+          cp "$BINARY_PATH" "$PACKAGE_DIR/$BINARY"
+          cp README.md CHANGELOG.md LICENSE "$PACKAGE_DIR/"
+          cp scripts/install.sh scripts/install.ps1 "$PACKAGE_DIR/"
+
+          chmod 755 "$PACKAGE_DIR/$BINARY"
+
+          # Create ZIP package.
+          (
+            cd "dist"
+            zip -r \
+              "${PACKAGE_NAME}.zip" \
+              "${PACKAGE_NAME}"
+          )
+
+          # Build a Debian package for Linux architectures.
+          if [ -n "${{ matrix.deb_arch }}" ]; then
+            DEB_ARCH="${{ matrix.deb_arch }}"
+            DEB_ROOT="dist/deb-${ASSET}"
+            DEB_CONTROL="${DEB_ROOT}/DEBIAN"
+            DEB_BIN="${DEB_ROOT}/usr/bin"
+            DEB_DOC="${DEB_ROOT}/usr/share/doc/supply-drop-ssh-transport-plugin"
+
+            mkdir -p "$DEB_CONTROL" "$DEB_BIN" "$DEB_DOC"
+
+            cp "$BINARY_PATH" "$DEB_BIN/supply-drop-ssh"
+            cp README.md CHANGELOG.md LICENSE "$DEB_DOC/"
+
+            cp packaging/debian/postinst "$DEB_CONTROL/postinst"
+            cp packaging/debian/postrm "$DEB_CONTROL/postrm"
+
+            chmod 755 "$DEB_BIN/supply-drop-ssh"
+            chmod 755 "$DEB_CONTROL/postinst"
+            chmod 755 "$DEB_CONTROL/postrm"
+
+            VERSION_NUMBER="${VERSION#v}"
+
+            INSTALLED_SIZE=$(
+              du -sk "$DEB_ROOT" | cut -f1
+            )
+
+            cat > "$DEB_CONTROL/control" <<EOF
+Package: supply-drop-ssh-transport-plugin
+Version: ${VERSION_NUMBER}
+Section: net
+Priority: optional
+Architecture: ${DEB_ARCH}
+Depends: supply-drop-bbs (>= 0.6.0), awk, openssh-client
+Installed-Size: ${INSTALLED_SIZE}
+Maintainer: Mesh America <support@meshamerica.com>
+Homepage: https://rneese1969.github.io/supply-drop-ssh-transport-plugin/
+Description: SSH process transport plugin for Supply Drop BBS
+ Adds an SSH listener that connects standard SSH clients to
+ Supply Drop BBS through the process transport plugin protocol.
+ Sessions are encrypted end to end and the BBS keeps running its
+ own login flow over the terminal.
+EOF
+
+            dpkg-deb --build \
+              --root-owner-group \
+              "$DEB_ROOT" \
+              "dist/supply-drop-ssh-transport-plugin_${DEB_ARCH}.deb"
+          fi
+
+      - name: Package Windows binary
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $binary = "supply-drop-ssh.exe"
+          $target = "${{ matrix.target }}"
+          $asset = "${{ matrix.asset }}"
+          $version = "${{ github.ref_name }}"
+          $packageName = "supply-drop-ssh-transport-plugin-${version}-${asset}"
           $packageDir = Join-Path "dist" $packageName
+          $binaryPath = Join-Path "target" "$target/release/$binary"
+
           New-Item -ItemType Directory -Force -Path $packageDir | Out-Null
-          Copy-Item "target/release/$binary" (Join-Path $packageDir $binary)
-          Copy-Item "README.md" $packageDir
-          Copy-Item "CHANGELOG.md" $packageDir
-          Copy-Item "LICENSE" $packageDir
-          Copy-Item "scripts/install.sh" $packageDir
-          Copy-Item "scripts/install.ps1" $packageDir
-          Compress-Archive -Path "$packageDir/*" -DestinationPath "dist/supply-drop-ssh-transport-plugin-${{ matrix.asset }}.zip" -Force
 
-          $debArch = "${{ matrix.deb_arch }}"
-          if ($debArch) {
-            $version = "${{ github.ref_name }}".TrimStart("v")
-            $debRoot = Join-Path "dist" "deb-${{ matrix.asset }}"
-            $debControl = Join-Path $debRoot "DEBIAN"
-            $debBin = Join-Path $debRoot "usr/bin"
-            $debDoc = Join-Path $debRoot "usr/share/doc/supply-drop-ssh-transport-plugin"
-
-            New-Item -ItemType Directory -Force -Path $debControl, $debBin, $debDoc | Out-Null
-            Copy-Item "target/release/$binary" (Join-Path $debBin "supply-drop-ssh")
-            Copy-Item "README.md" $debDoc
-            Copy-Item "CHANGELOG.md" $debDoc
-            Copy-Item "LICENSE" $debDoc
-            Copy-Item "packaging/debian/postinst" $debControl
-            Copy-Item "packaging/debian/postrm" $debControl
-
-            chmod 755 (Join-Path $debBin "supply-drop-ssh")
-            chmod 755 (Join-Path $debControl "postinst")
-            chmod 755 (Join-Path $debControl "postrm")
-
-            $installedSize = [Math]::Ceiling(((Get-ChildItem $debRoot -Recurse -File | Measure-Object -Property Length -Sum).Sum) / 1KB)
-            $control = (@(
-              "Package: supply-drop-ssh-transport-plugin",
-              "Version: $version",
-              "Section: net",
-              "Priority: optional",
-              "Architecture: $debArch",
-              "Depends: supply-drop-bbs (>= 0.6.0), awk, openssh-client",
-              "Installed-Size: $installedSize",
-              "Maintainer: Mesh America <support@meshamerica.com>",
-              "Homepage: https://rneese1969.github.io/supply-drop-ssh-transport-plugin/",
-              "Description: SSH process transport plugin for Supply Drop BBS",
-              " Adds an SSH listener that connects standard SSH clients to",
-              " Supply Drop BBS through the process transport plugin protocol.",
-              " Sessions are encrypted end to end and the BBS keeps running its",
-              " own login flow over the terminal."
-            ) -join "`n") + "`n"
-            Set-Content -NoNewline -Encoding ASCII -Path (Join-Path $debControl "control") -Value $control
-
-            dpkg-deb --build --root-owner-group $debRoot "dist/supply-drop-ssh-transport-plugin_${debArch}.deb"
+          if (-not (Test-Path $binaryPath)) {
+            throw "Binary not found: $binaryPath"
           }
+
+          Copy-Item $binaryPath (Join-Path $packageDir $binary)
+          Copy-Item README.md, CHANGELOG.md, LICENSE $packageDir
+          Copy-Item scripts/install.sh, scripts/install.ps1 $packageDir
+
+          Compress-Archive `
+            -Path "$packageDir/*" `
+            -DestinationPath "dist/$packageName.zip" `
+            -Force
 
       - name: Upload package
         uses: actions/upload-artifact@v5
         with:
           name: supply-drop-ssh-transport-plugin-${{ matrix.asset }}
           path: |
-            dist/supply-drop-ssh-transport-plugin-${{ matrix.asset }}.zip
+            dist/supply-drop-ssh-transport-plugin-*.zip
             dist/supply-drop-ssh-transport-plugin_*.deb
           if-no-files-found: error
 
@@ -128,10 +234,8 @@ jobs:
     name: Publish GitHub release
     needs: build
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
 
+    steps:
       - name: Download packages
         uses: actions/download-artifact@v5
         with:
@@ -141,9 +245,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.ref_name }}
+        shell: bash
         run: |
-          files=$(find artifacts \( -name '*.zip' -o -name '*.deb' \) -type f | sort)
+          set -eux
+
+          mapfile -t files < <(
+            find artifacts \
+              \( -name '*.zip' -o -name '*.deb' \) \
+              -type f | sort
+          )
+
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No release packages found."
+            exit 1
+          fi
+
           gh release create "$TAG" \
-            $files \
+            "${files[@]}" \
             --title "Supply Drop SSH Transport Plugin $TAG" \
             --generate-notes
