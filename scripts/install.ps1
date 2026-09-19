@@ -2,7 +2,7 @@ param(
     [string]$Version = "latest",
     [string]$InstallDir = "$env:ProgramFiles\SupplyDrop\bin",
     [string]$BinName = "supply-drop-ssh.exe",
-    [string]$Repo = "Mesh-America/supply-drop-ssh-transport-plugin",
+    [string]$Repo = "rneese1969/supply-drop-ssh-transport-plugin",
     [string]$BbsBin = "supply-drop-bbs",
     [bool]$RegisterPlugin = $true
 )
